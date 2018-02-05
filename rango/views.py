@@ -4,6 +4,7 @@ from rango.models import Category
 from rango.models import Page
 from rango.forms import CategoryForm
 from rango.forms import PageForm
+from rango.forms import UserForm, UserProfileForm
 
 def show_category(request, category_name_slug):
     context_dict = {}
@@ -63,8 +64,42 @@ def add_page(request, category_name_slug):
     return render(request, 'rango/add_page.html', context_dict)
 
 def about(request):
-    if request.session.test_cookie_worked():
-        print("TEST COOKIE WORKED!")
-        request.session.delete_test_cookie()
-    return HttpResponse("Rango says here is the about page. <a href='/rango/'>View index page</a>") 
-    return render(request, 'rango/about.html',{})
+    print(request.method)
+    print(request.user)
+    return render(request, 'rango/about.html', {})
+    #return HttpResponse("Rango says here is the about page. <a href='/rango/'>View index page</a>") 
+    #return render(request, 'rango/about.html',{})
+
+def register(request):
+    registered = False
+    if request.method == 'POST':
+        user_form = UserForm(data=request.POST)
+        profile_form = UserProfileForm(data=request.POST)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            user.set_password(user.password)
+            user.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user
+
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+
+            profile.save()
+
+            registered = True
+        else:
+            print(user_form.errors, profile_form.errors)
+    else:
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+
+    return render(request,
+                  'rango/register.html',
+                  {'user_form': user_form,
+                   'profile_form': profile_form,
+                   'registered': registered})
+
+
+            
